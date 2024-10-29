@@ -27,7 +27,7 @@ def initScan(host,type,tlim=None,count=None):
 
     if re.match(r"^([1-9]|[1-9][0-9]|[1][0-9]{2}|[2][0-4][0-9]|[2][0-5]{2})\.([0]|[1-9]|[1-9][0-9]|[1][0-9]{2}|[2][0-4][0-9]|[2][0-5]{2})\.([0]|[1-9]|[1-9][0-9]|[1][0-9]{2}|[2][0-4][0-9]|[2][0-5]{2})\.([0]|[1-9]|[1-9][0-9]|[1][0-9]{2}|[2][0-4][0-9]|[2][0-5]{2})$", host):
 
-        print("Scanning host: " + str(host))
+        print("Scanning host: " + str(host) + "Press q to abort any scan.")
 
         if type == "A":
             scan = subprocess.Popen("ping " + host)
@@ -48,6 +48,7 @@ def initScan(host,type,tlim=None,count=None):
         while scan.poll() is None:
             close = input("")
             if close == "q":
+               print("Scan terminated.")
                scan.terminate()
 
     else:
