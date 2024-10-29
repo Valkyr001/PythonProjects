@@ -1,3 +1,6 @@
+#Password management multi-tool
+#Working modules as of 10/29/2024: Analysis
+
 import tkinter as tk
 import re
 from ip import insecurePhrases as ip
