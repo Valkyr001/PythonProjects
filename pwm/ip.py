@@ -1,0 +1,1 @@
+insecurePhrases = ["password","password123","PassWord"]

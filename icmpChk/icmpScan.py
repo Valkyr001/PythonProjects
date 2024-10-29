@@ -1,3 +1,5 @@
+#Ping scanner with options. Counted ping scan requires administrative cmd prompt on Windows.
+
 import time
 import subprocess
 import re
@@ -68,7 +70,7 @@ while True:
         print("Scan Types: ")
         print("\n(A) Default")
         print("(B) Timed")
-        print("(C) Counted")
+        print("(C) Counted (Requires administrative cmd prompt)")
         print("(D) Continuous")
 
         type = input("\nSelect: ")
@@ -90,5 +92,3 @@ while True:
         break
     else:
         returnError(3)
-
-#high key took too fucking long
