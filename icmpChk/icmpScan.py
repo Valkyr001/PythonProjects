@@ -1,6 +1,15 @@
 import time
 import subprocess
 import re
+import random
+
+msgs = {
+    1:"testing out randint :)",
+    2:"wonder if madi will ever see this",
+    3:"def overlyComplicated()",
+    4:"webvault coming soon",
+    5:"the webvault thing is so cap XDDD"
+}
 
 def returnError(stopcode):
     if stopcode == 1:
@@ -45,6 +54,8 @@ def initScan(host,type,tlim=None,count=None):
 print("Starting icmpScan...")
 print("Version: 1.0.0")
 print("Author: benji")
+num = random.randint(1,5)
+print(msgs[num])
 
 while True:
     print("\n Options: ")
