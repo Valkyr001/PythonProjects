@@ -6,7 +6,7 @@ import re
 from ip import insecurePhrases as ip
 
 root = tk.Tk()
-root.geometry("400x400")
+root.geometry("300x200")
 root.title("pwm")
 
 pwd_var = tk.StringVar()
@@ -62,7 +62,7 @@ def strCheck():
     print("\nRecommendations: ")
 
     if ipDetected == True:
-        print("\nRemove the following phrases from your password: ")
+        print("\nRemove the following insecure / easily guessable phrases from your password: ")
         for item in ips:
             print(item)
 
