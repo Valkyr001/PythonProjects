@@ -5,6 +5,7 @@ import subprocess
 import re
 import random
 
+#Random messages
 msgs = {
     1:"testing out randint :)",
     2:"wonder if madi will ever see this",
@@ -13,6 +14,7 @@ msgs = {
     5:"the webvault thing is so cap XDDD"
 }
 
+#Functions
 def returnError(stopcode):
     if stopcode == 1:
         print("Error 1: Invalid Scan Type")
@@ -52,6 +54,7 @@ def initScan(host,type,tlim=None,count=None):
             print("Scan terminated.")
             scan.terminate()
 
+#Interaction
 print("Starting icmpScan...")
 print("Version: 1.0.0")
 print("Author: benji")
