@@ -1,5 +1,3 @@
-#Ping scanner with options. Counted ping scan requires administrative cmd prompt on Windows.
-
 import time
 import subprocess
 import re
@@ -26,6 +24,8 @@ def returnError(stopcode):
         print("Error 4: Invalid scan type selected")
     elif stopcode == 5:
         print("Error 5: Invalid input supplied for 'time limit'")
+    elif stopcode == 6:
+        print("Error 6: Invalid input supplied for 'count'")
 
 def initScan(host,type,tlim=None,count=None):
 
@@ -89,7 +89,10 @@ while True:
                     returnError(5)
             elif type == "C":
                 count = input("Specify a count: ")
-                initScan(host,type,None,count)
+                if re.match(r"^([0-9]+)$",count):
+                    initScan(host,type,None,count)
+                else:
+                    returnError(6)
             elif type == "D":
                 initScan(host,type)
             elif type not in ["A","B","C","D"]:
