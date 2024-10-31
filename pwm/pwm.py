@@ -79,7 +79,7 @@ def strCheck():
 
 header = tk.Label(root, text="Input your password: ")
 header.pack(expand=True)
-pwd_in = tk.Entry(root, textvariable=pwd_var)
+pwd_in = tk.Entry(root, textvariable=pwd_var,)
 pwd_in.pack(expand=True)
 submit = tk.Button(root, text="Submit",command=strCheck)
 submit.pack(expand=True)

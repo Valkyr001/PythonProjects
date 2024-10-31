@@ -69,7 +69,7 @@ insecurePhrases = [
     "kindredspirit", "deepconnection", "bond", "link", "tie", "attachment", 
     "relationship", "friendship", "companionship", "fellowship", "brotherhood", 
     "sisterhood", "community", "unity", "togetherness", "collective", "kinship",
-    "password2", "qwerty2", "abcabc", "password!123", "password2023", "iloveyou2",
+    "password2", "qwerty2", "abcabc", "password!123", "password2023","password2024", "iloveyou2",
     "welcome1!", "12345678!", "password!1", "letmein2", "admin2", "123qweasd",
     "qwertyui", "flower123", "letmein!", "shadow123", "iloveyou1234", "qwerty1234",
     "123456abc", "sunshine!!", "12345abcd", "monkeybusiness", "welcomehome",
