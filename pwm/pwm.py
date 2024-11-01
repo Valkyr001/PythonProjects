@@ -80,7 +80,7 @@ def strCheck():
     if specials == False:
         print("Add special characters to your password such as '!' or '%'")
 
-def hashFile():
+def storeHashFile():
     #Create the pwm directory if not already existant
     dirName = "pwmOutput"
     os.makedirs(dirName, exist_ok=True)
@@ -94,7 +94,20 @@ def hashFile():
     f = open("pwmOutput/pwmhash" + str(uid) + ".txt","a")
     f.write(hexDigest)
     f.close()
-    print("\nHash Stored At: pwmOutput/pwmhash" + str(uid) + ".txt")
+    print("\nPassword stored as hash (SHA256) at pwmOutput/pwmhash" + str(uid) + ".txt")
+
+def storePlaintext():
+    #Create the pwm directory if not already existant
+    dirName = "pwmOutput"
+    os.makedirs(dirName, exist_ok=True)
+
+    string = pwd_var.get()
+    uid = random.randint(1000,9999)
+
+    f = open("pwmOutput/plain" + str(uid) + ".txt","a")
+    f.write(string)
+    f.close()
+    print("Password stored in plaintext at pwmOutput/plain" + str(uid) + ".txt")
 
 header = tk.Label(root, text="Input your password: ")
 header.pack(expand=True)
@@ -102,7 +115,9 @@ pwd_in = tk.Entry(root, textvariable=pwd_var,)
 pwd_in.pack(expand=True)
 submit = tk.Button(root, text="Analyze",command=strCheck)
 submit.pack(expand=True)
-hash = tk.Button(root, text="Store as hash",command=hashFile)
+hash = tk.Button(root, text="Store as hash",command=storeHashFile)
 hash.pack(expand=True)
+plain = tk.Button(root, text="Store as plaintext",command=storePlaintext)
+plain.pack(expand=True)
 
 root.mainloop()
