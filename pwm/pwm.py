@@ -4,6 +4,9 @@
 import tkinter as tk
 import re
 from ip import insecurePhrases as ip
+import random
+import hashlib
+import os
 
 root = tk.Tk()
 root.geometry("300x200")
@@ -77,12 +80,29 @@ def strCheck():
     if specials == False:
         print("Add special characters to your password such as '!' or '%'")
 
+def hashFile():
+    #Create the pwm directory if not already existant
+    dirName = "pwmOutput"
+    os.makedirs(dirName, exist_ok=True)
+
+    string = pwd_var.get()
+    uid = random.randint(1000,9999)
+    
+    hashObj = hashlib.sha256(string.encode())
+    hexDigest = hashObj.hexdigest()
+
+    f = open("pwmOutput/pwmhash" + str(uid) + ".txt","a")
+    f.write(hexDigest)
+    f.close()
+    print("\nHash Stored At: pwmOutput/pwmhash" + str(uid) + ".txt")
+
 header = tk.Label(root, text="Input your password: ")
 header.pack(expand=True)
 pwd_in = tk.Entry(root, textvariable=pwd_var,)
 pwd_in.pack(expand=True)
-submit = tk.Button(root, text="Submit",command=strCheck)
+submit = tk.Button(root, text="Analyze",command=strCheck)
 submit.pack(expand=True)
-
+hash = tk.Button(root, text="Store as hash",command=hashFile)
+hash.pack(expand=True)
 
 root.mainloop()
