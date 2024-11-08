@@ -4,6 +4,6 @@ ip.py (insecure phrases) is a custom import for pwm that contains a list of inse
 module of PWM will compare the supplied password against the database.
 
 Encryption Module: Incomplete
-Hashing Module: Incomplete
-Storage Module: Incomplete
+Hashing Module: Complete
+Storage Module: Complete
 Analyzing Module: Complete

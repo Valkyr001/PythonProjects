@@ -1,4 +1,4 @@
-#current wordcount: 1665
+#current wordcount: 1666
 insecurePhrases = [
     "password", "123456", "123456789", "12345678", "12345", "1234", "abc", "abc123",
     "qwerty", "letmein", "monkey", "sunshine", "iloveyou", "trustno1", "password1",

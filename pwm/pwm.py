@@ -1,5 +1,5 @@
 #Password management multi-tool
-#Working modules as of 10/29/2024: Analysis
+#Working modules as of 11/8/2024: Analysis, Storage, Hashing
 
 import tkinter as tk
 import re
@@ -7,12 +7,16 @@ from ip import insecurePhrases as ip
 import random
 import hashlib
 import os
+import datetime
 
 root = tk.Tk()
 root.geometry("300x200")
 root.title("pwm")
 
 pwd_var = tk.StringVar()
+
+date_time = datetime.datetime.now()
+timestamp = str("_" + str(date_time.day) + "-" + str(date_time.month) + "-" + str(date_time.year) + "_" + str(date_time.hour) + "-" + str(date_time.minute) + "-" + str(date_time.second))
 
 def strCheck():
     string = pwd_var.get()
@@ -91,10 +95,10 @@ def storeHashFile():
     hashObj = hashlib.sha256(string.encode())
     hexDigest = hashObj.hexdigest()
 
-    f = open("pwmOutput/pwmhash" + str(uid) + ".txt","a")
+    f = open("pwmOutput/hash" + timestamp + ".txt","a")
     f.write(hexDigest)
     f.close()
-    print("\nPassword stored as hash (SHA256) at pwmOutput/pwmhash" + str(uid) + ".txt")
+    print("\nPassword stored as hash (SHA256) at pwmOutput/hash" + timestamp + ".txt")
 
 def storePlaintext():
     #Create the pwm directory if not already existant
@@ -102,12 +106,11 @@ def storePlaintext():
     os.makedirs(dirName, exist_ok=True)
 
     string = pwd_var.get()
-    uid = random.randint(1000,9999)
 
-    f = open("pwmOutput/plain" + str(uid) + ".txt","a")
+    f = open("pwmOutput/plain" + timestamp + ".txt","a")
     f.write(string)
     f.close()
-    print("Password stored in plaintext at pwmOutput/plain" + str(uid) + ".txt")
+    print("Password stored in plaintext at pwmOutput/plain" + timestamp + ".txt")
 
 header = tk.Label(root, text="Input your password: ")
 header.pack(expand=True)
