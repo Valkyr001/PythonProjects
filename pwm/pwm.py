@@ -10,13 +10,11 @@ import os
 import datetime
 
 root = tk.Tk()
-root.geometry("300x200")
+root.geometry("500x300")
 root.title("pwm")
+root.resizable(False,False)
 
 pwd_var = tk.StringVar()
-
-date_time = datetime.datetime.now()
-timestamp = str("_" + str(date_time.day) + "-" + str(date_time.month) + "-" + str(date_time.year) + "_" + str(date_time.hour) + "-" + str(date_time.minute) + "-" + str(date_time.second))
 
 def strCheck():
     string = pwd_var.get()
@@ -30,97 +28,146 @@ def strCheck():
     ips = []
     crit = []
 
-    if re.match(r"^.{10,}$",string):
-        length = True
-        crit.append(True)
-    if re.search(r"[A-Z]",string):
-        uppercase = True
-        crit.append(True)
-    if re.search(r"[a-z]",string):
-        lowercase = True
-        crit.append(True)
-    if re.search(r"[0-9]",string):
-        nums = True
-        crit.append(True)
-    if re.search(r"[!@#$%^&*()]",string):
-        specials = True
-        crit.append(True)
+    if string != "":
+        if re.match(r"^.{10,}$",string):
+            length = True
+            crit.append(True)
+        if re.search(r"[A-Z]",string):
+            uppercase = True
+            crit.append(True)
+        if re.search(r"[a-z]",string):
+            lowercase = True
+            crit.append(True)
+        if re.search(r"[0-9]",string):
+            nums = True
+            crit.append(True)
+        if re.search(r"[!@#$%^&*()]",string):
+            specials = True
+            crit.append(True)
 
-    print("Results: ")
+        output("\n--------------------------------")
+        output("\nResults: ")
 
-    for i in crit:
-        if i == True:
-            chks += 1
+        for i in crit:
+            if i == True:
+                chks += 1
 
-    for word in ip:
-        if word in string:
-            ipDetected = True
-            ips.append(str(word))
+        for word in ip:
+            if word in string:
+                ipDetected = True
+                ips.append(str(word))
 
-    if chks == 5 and ipDetected == False:
-        print("Password Strength: High")
-    elif chks == 5 and ipDetected == True:
-        print("Password Strength: Medium")
-    elif chks >= 3:
-        print("Password Strength: Medium")
+        if chks == 5 and ipDetected == False:
+            output("\nPassword Strength: High")
+        elif chks == 5 and ipDetected == True:
+            output("\nPassword Strength: Medium")
+        elif chks >= 3:
+            output("\nPassword Strength: Medium")
+        else:
+            output("\nPassword Strength: Low")   
+        
+        output("\nRecommendations: ")
+
+        if ipDetected == True:
+            output("\nRemove the following insecure / easily guessable phrases from your password: ")
+            for item in ips:
+                output(item)
+
+        if length == False:
+            output("\nIncrease password length to atleast 10 characters")
+        if uppercase == False:
+            output("\nAdd uppercase characters to your password")
+        if lowercase == False:
+            output("\nAdd lowercase characters to your password")
+        if nums == False:
+            output("\nAdd numbers to your password.")
+        if specials == False:
+            output("\nAdd special characters to your password such as '!' or '%'")
     else:
-        print("Password Strength: Low")   
-    
-    print("\nRecommendations: ")
+        output("\nNo input detected. Cannot analyze.")
 
-    if ipDetected == True:
-        print("\nRemove the following insecure / easily guessable phrases from your password: ")
-        for item in ips:
-            print(item)
+def output(text):
+    out.config(state='normal')
+    out.insert(tk.END, str(text))
+    out.yview(tk.END)
+    out.config(state='disabled')
 
-    if length == False:
-        print("\nIncrease password length to atleast 10 characters")
-    if uppercase == False:
-        print("Add uppercase characters to your password")
-    if lowercase == False:
-        print("Add lowercase characters to your password")
-    if nums == False:
-        print("Add numbers to your password.")
-    if specials == False:
-        print("Add special characters to your password such as '!' or '%'")
+def clear():
+    out.config(state='normal')
+    out.delete("1.0", tk.END)
+    out.config(state="disabled")
 
 def storeHashFile():
-    #Create the pwm directory if not already existant
-    dirName = "pwmOutput"
-    os.makedirs(dirName, exist_ok=True)
+    timestamp = datetime.datetime.now()
 
     string = pwd_var.get()
-    uid = random.randint(1000,9999)
-    
-    hashObj = hashlib.sha256(string.encode())
-    hexDigest = hashObj.hexdigest()
 
-    f = open("pwmOutput/hash" + timestamp + ".txt","a")
-    f.write(hexDigest)
-    f.close()
-    print("\nPassword stored as hash (SHA256) at pwmOutput/hash" + timestamp + ".txt")
+    if string != "":
+        #Create the pwm directory if not already existant
+        dirName = "storage/hash"
+        os.makedirs(dirName, exist_ok=True)
+
+        uid = random.randint(10000,99999)
+
+        salted = (str(uid) + string)
+        
+        hashstr = hashlib.sha512(salted.encode())
+        hex = hashstr.hexdigest()
+
+        f = open("storage/hash/pass" + str(uid) + ".txt","a")
+        f.write(hex)
+        f.write("\n" + str(timestamp))
+        f.close()
+        output("\nPassword stored as salted hash (SHA512) at pwm/storage/hash/pass" + str(uid) + ".txt")
+    else:
+        output("\nNo input detected, cannot store password.")
 
 def storePlaintext():
-    #Create the pwm directory if not already existant
-    dirName = "pwmOutput"
-    os.makedirs(dirName, exist_ok=True)
+    timestamp = datetime.datetime.now()
 
     string = pwd_var.get()
 
-    f = open("pwmOutput/plain" + timestamp + ".txt","a")
-    f.write(string)
-    f.close()
-    print("Password stored in plaintext at pwmOutput/plain" + timestamp + ".txt")
+    if string != "":
+        #Create the pwm directory if not already existant
+        dirName = "storage/plaintxt"
+        os.makedirs(dirName, exist_ok=True)
+
+        uid = random.randint(1000,9999)
+
+        f = open("storage/plaintxt/pass" + str(uid) + ".txt","a")
+        f.write(string)
+        f.write("\n" + str(timestamp))
+        f.close()
+        output("\nPassword stored in plaintext at storage/plaintxt/pass" + str(uid) + ".txt")
+    else:
+        output("\nNo input detected, cannot store password.")
 
 header = tk.Label(root, text="Input your password: ")
 header.pack(expand=True)
-pwd_in = tk.Entry(root, textvariable=pwd_var,)
+
+pwd_in = tk.Entry(root, width=20, textvariable=pwd_var)
 pwd_in.pack(expand=True)
-submit = tk.Button(root, text="Analyze",command=strCheck)
-submit.pack(expand=True)
-hash = tk.Button(root, text="Store as hash",command=storeHashFile)
-hash.pack(expand=True)
-plain = tk.Button(root, text="Store as plaintext",command=storePlaintext)
-plain.pack(expand=True)
+
+button_frame = tk.Frame(root)
+button_frame.pack(fill='x', padx=10, pady=10)
+
+output_header = tk.Label(root, text="Output: ")
+output_header.pack()
+
+submit = tk.Button(button_frame, text="Analyze",width=20,command=strCheck)
+submit.pack(side="left", expand=True)
+
+hash = tk.Button(button_frame, text="Store as hash",width=20,command=storeHashFile)
+hash.pack(side="left", expand=True)
+
+plain = tk.Button(button_frame, text="Store as plaintext",width=20,command=storePlaintext)
+plain.pack(side="left", expand=True)
+
+out = tk.Text(root, height=10, width=60)
+out.pack()
+out.config(state='disabled')
+
+clearout = tk.Button(root,text="Clear Output",width=20,command=clear)
+clearout.pack(expand=True,pady=5)
 
 root.mainloop()
