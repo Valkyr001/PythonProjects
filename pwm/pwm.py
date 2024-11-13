@@ -1,151 +1,131 @@
-#Password management multi-tool
-#Working modules as of 11/8/2024: Analysis, Storage, Hashing
+#Password management multi-tool.
+#Can analyze a given password and output recommendations and weaknesses.
+#Utilizes the Have I Been Pwned API to check the password against databreaches.
 
+#Output notation:
+#[>] Header
+#[+] Check Passed
+#[!] Check Failed/Alert
+#[i] Information
+#[*] Error Information
+
+#modules
 import tkinter as tk
 import re
-from ip import insecurePhrases as ip
+from ip import insecurePhrases as phrases
 import random
 import hashlib
 import os
 import datetime
+import requests
 
+#build tkinter window
 root = tk.Tk()
-root.geometry("500x300")
+root.geometry("550x350")
 root.title("pwm")
 root.resizable(False,False)
 
-pwd_var = tk.StringVar()
+#user-inputted password
+userinput = tk.StringVar()
 
-def strCheck():
-    string = pwd_var.get()
-    length = False
-    uppercase = False
-    lowercase = False
-    nums = False
-    specials = False
-    ipDetected = False
-    chks = 0
-    ips = []
-    crit = []
+#main
+def main():
+    #main function variable
+    password = userinput.get()
+    phraseList = []
 
-    if string != "":
-        if re.match(r"^.{10,}$",string):
-            length = True
-            crit.append(True)
-        if re.search(r"[A-Z]",string):
-            uppercase = True
-            crit.append(True)
-        if re.search(r"[a-z]",string):
-            lowercase = True
-            crit.append(True)
-        if re.search(r"[0-9]",string):
-            nums = True
-            crit.append(True)
-        if re.search(r"[!@#$%^&*()]",string):
-            specials = True
-            crit.append(True)
+    checks = {
+        "length":False,
+        "uppercase":False,
+        "lowercase":False,
+        "nums":False,
+        "specials":False,
+        "phrase":False
+    }
 
-        output("\n--------------------------------")
-        output("\nResults: ")
+    #subfunctions / methods
 
-        for i in crit:
-            if i == True:
-                chks += 1
-
-        for word in ip:
-            if word in string:
-                ipDetected = True
-                ips.append(str(word))
-
-        if chks == 5 and ipDetected == False:
-            output("\nPassword Strength: High")
-        elif chks == 5 and ipDetected == True:
-            output("\nPassword Strength: Medium")
-        elif chks >= 3:
-            output("\nPassword Strength: Medium")
+    #check password against simple characteristics with RegEx
+    def simpleChecks(string):
+        if string != "":
+            if re.match(r"^.{10,}$",string):
+                checks["length"] = True
+            if re.search(r"[A-Z]",string):
+                checks["uppercase"] = True
+            if re.search(r"[a-z]",string):
+                checks["lowercase"] = True
+            if re.search(r"[0-9]",string):
+                checks["nums"] = True
+            if re.search(r"[!@#$%^&*()]",string):
+                checks["specials"] = True
         else:
-            output("\nPassword Strength: Low")   
-        
-        output("\nRecommendations: ")
+            output("\n[*] Invalid password string inputted")
 
-        if ipDetected == True:
-            output("\nRemove the following insecure / easily guessable phrases from your password: ")
-            for item in ips:
-                output(item)
+        if checks["length"] == False:
+            output("\n[i] Increase the length of your password.")
+        if checks["uppercase"] == False:
+            output("\n[i] Add uppercase characters to your password.")
+        if checks["lowercase"] == False:
+            output("\n[i] Add lowercase characters to your password.")
+        if checks["nums"] == False:
+            output("\n[i] Add numbers to your password.")
+        if checks["specials"] == False:
+            output("\n[i] Add special characters to your password.")
 
-        if length == False:
-            output("\nIncrease password length to atleast 10 characters")
-        if uppercase == False:
-            output("\nAdd uppercase characters to your password")
-        if lowercase == False:
-            output("\nAdd lowercase characters to your password")
-        if nums == False:
-            output("\nAdd numbers to your password.")
-        if specials == False:
-            output("\nAdd special characters to your password such as '!' or '%'")
-    else:
-        output("\nNo input detected. Cannot analyze.")
+    #check password against known data breaches with HIBP API
+    def apiCheck(string):
+        sha1 = hashlib.sha1(string.encode("utf-8")).hexdigest().upper()
+        prefix = sha1[:5]
+        suffix = sha1[5:]
+        url = f"https://api.pwnedpasswords.com/range/" + str(prefix)
+        response = requests.get(url)
+
+        output("\n[>] HaveIBeenPwned API Results:")
+
+        if response.status_code == 200:
+            pwned = response.text.splitlines()
+            for line in pwned:
+                stored_suffix, count = line.split(":")
+                if stored_suffix == suffix:
+                    output(f"\n[!] Password has been pwned {count} times.")
+                    return True
+            output("\n[+] Password not found in any data breaches.")
+            return False           
+        else:
+            output(f"[*] Error encountered while attempting to reach API. HTTP Code: {response.status_code}")
+    
+    #check the password for any of the phrases from ip.py
+    def checkPhrases(string):
+        for word in phrases:
+            if word in string:
+                phrase = True
+                phraseList.append(str(word))
+        if phrase == True:
+            for i in phraseList:
+                output(f"\n[i] Remove the word or phrase: '{i}'")
+
+    #run through subfunctions and output results
+    output("\n[>>>] RESULTS [<<<]")
+    simpleChecks(password)
+    apiCheck(password)
+    checkPhrases(password)
 
 def output(text):
-    out.config(state='normal')
-    out.insert(tk.END, str(text))
-    out.yview(tk.END)
-    out.config(state='disabled')
+        out.config(state='normal')
+        out.insert(tk.END, str(text))
+        out.yview(tk.END)
+        out.config(state='disabled')
 
 def clear():
     out.config(state='normal')
     out.delete("1.0", tk.END)
     out.config(state="disabled")
 
-def storeHashFile():
-    timestamp = datetime.datetime.now()
-
-    string = pwd_var.get()
-
-    if string != "":
-        #Create the pwm directory if not already existant
-        dirName = "storage/hash"
-        os.makedirs(dirName, exist_ok=True)
-
-        uid = random.randint(10000,99999)
-
-        salted = (str(uid) + string)
-        
-        hashstr = hashlib.sha512(salted.encode())
-        hex = hashstr.hexdigest()
-
-        f = open("storage/hash/pass" + str(uid) + ".txt","a")
-        f.write(hex)
-        f.write("\n" + str(timestamp))
-        f.close()
-        output("\nPassword stored as salted hash (SHA512) at pwm/storage/hash/pass" + str(uid) + ".txt")
-    else:
-        output("\nNo input detected, cannot store password.")
-
-def storePlaintext():
-    timestamp = datetime.datetime.now()
-
-    string = pwd_var.get()
-
-    if string != "":
-        #Create the pwm directory if not already existant
-        dirName = "storage/plaintxt"
-        os.makedirs(dirName, exist_ok=True)
-
-        uid = random.randint(1000,9999)
-
-        f = open("storage/plaintxt/pass" + str(uid) + ".txt","a")
-        f.write(string)
-        f.write("\n" + str(timestamp))
-        f.close()
-        output("\nPassword stored in plaintext at storage/plaintxt/pass" + str(uid) + ".txt")
-    else:
-        output("\nNo input detected, cannot store password.")
-
+#tkinter widgets
 header = tk.Label(root, text="Input your password: ")
 header.pack(expand=True)
 
-pwd_in = tk.Entry(root, width=20, textvariable=pwd_var)
+pwd_in = tk.Entry(root, width=40, textvariable=userinput)
 pwd_in.pack(expand=True)
 
 button_frame = tk.Frame(root)
@@ -154,16 +134,16 @@ button_frame.pack(fill='x', padx=10, pady=10)
 output_header = tk.Label(root, text="Output: ")
 output_header.pack()
 
-submit = tk.Button(button_frame, text="Analyze",width=20,command=strCheck)
+submit = tk.Button(button_frame, text="Analyze",width=20,command=main)
 submit.pack(side="left", expand=True)
 
-hash = tk.Button(button_frame, text="Store as hash",width=20,command=storeHashFile)
+hash = tk.Button(button_frame, text="Store as hash",width=20)
 hash.pack(side="left", expand=True)
 
-plain = tk.Button(button_frame, text="Store as plaintext",width=20,command=storePlaintext)
+plain = tk.Button(button_frame, text="Store as plaintext",width=20)
 plain.pack(side="left", expand=True)
 
-out = tk.Text(root, height=10, width=60)
+out = tk.Text(root, height=10, width=70)
 out.pack()
 out.config(state='disabled')
 
@@ -171,3 +151,5 @@ clearout = tk.Button(root,text="Clear Output",width=20,command=clear)
 clearout.pack(expand=True,pady=5)
 
 root.mainloop()
+
+    
