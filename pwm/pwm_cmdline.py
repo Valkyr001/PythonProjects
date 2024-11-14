@@ -2,6 +2,8 @@
 #Can analyze a given password and output recommendations and weaknesses.
 #Utilizes the Have I Been Pwned API to check the password against databreaches.
 
+#This version of pwm handles user-interaction through the command prompt/terminal.
+
 #Output notation:
 #[>] Header
 #[+] Check Passed
@@ -10,7 +12,6 @@
 #[*] Error Information
 
 #modules
-import tkinter as tk
 import re
 from ip import insecurePhrases as phrases
 import random
@@ -104,52 +105,49 @@ def main():
             for i in phraseList:
                 output(f"\n[i] Remove the word or phrase: '{i}'")
 
-    #run through subfunctions and output results
-    output("\n[>>>] RESULTS [<<<]")
-    simpleChecks(password)
-    apiCheck(password)
-    checkPhrases(password)
+    #run through subfunctions, result output is handled within each method
+    if password != "":
+        output("\n[>>>] RESULTS [<<<]")
+        simpleChecks(password)
+        checkPhrases(password)
+        apiCheck(password)
+    else:
+        output("\n[!] Error analyzing password: no input detected.")
 
-def output(text):
-        out.config(state='normal')
-        out.insert(tk.END, str(text))
-        out.yview(tk.END)
-        out.config(state='disabled')
+def savePlaintext():
+    string = userinput.get()
+    timestamp = datetime.datetime.now()
+    path = "pwm/vault"
+    uid = random.randint(1000,9999)
 
-def clear():
-    out.config(state='normal')
-    out.delete("1.0", tk.END)
-    out.config(state="disabled")
+    if string != "":
+        os.makedirs(path, exist_ok=True)
+        f = open(f"{path}/plaintxt{uid}.txt","a")
+        f.write(str(timestamp))
+        f.write(f"\n{string}")
+        f.close()
+        output(f"\n[i] Password stored in plaintext at {path}/plaintxt{uid}.txt")
+    else:
+        output("\n[!] No input detected. Cannot store password.")
 
-#tkinter widgets
-header = tk.Label(root, text="Input your password: ")
-header.pack(expand=True)
+def saveHashed():
+    timestamp = datetime.datetime.now()
+    string = userinput.get()
+    path = "pwm/vault"
+    uid = random.randint(1000,9999)
 
-pwd_in = tk.Entry(root, width=40, textvariable=userinput)
-pwd_in.pack(expand=True)
+    if string != "":
+        os.makedirs(path, exist_ok=True)
+        hash = hashlib.sha256(string.encode()).hexdigest()
 
-button_frame = tk.Frame(root)
-button_frame.pack(fill='x', padx=10, pady=10)
-
-output_header = tk.Label(root, text="Output: ")
-output_header.pack()
-
-submit = tk.Button(button_frame, text="Analyze",width=20,command=main)
-submit.pack(side="left", expand=True)
-
-hash = tk.Button(button_frame, text="Store as hash",width=20)
-hash.pack(side="left", expand=True)
-
-plain = tk.Button(button_frame, text="Store as plaintext",width=20)
-plain.pack(side="left", expand=True)
-
-out = tk.Text(root, height=10, width=70)
-out.pack()
-out.config(state='disabled')
-
-clearout = tk.Button(root,text="Clear Output",width=20,command=clear)
-clearout.pack(expand=True,pady=5)
-
-root.mainloop()
+        f = open(f"{path}/hashed{uid}.txt","a")
+        f.write(str(timestamp))
+        f.write("\n" + str(hash))
+        f.close()
+        output(f"\n[i] Password stored as SHA256 at {path}/hashed{uid}.txt")
+    else:
+        output("\n[!] No input detected. Cannot store password.")
+        
+#begin user interaction loop
 
     
