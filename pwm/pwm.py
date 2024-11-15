@@ -27,7 +27,7 @@ from Crypto.Cipher import AES               #must be downloaded
 from Crypto.Random import get_random_bytes  #must be downloaded
 from Crypto.Util.Padding import pad, unpad  #must be downloaded
 
-sysVer = "1.2.1" #version
+codeVersion = "1.2.2" #version
 
 #create command-line arguments to modify script behavior
 def argument_parse():
@@ -391,7 +391,7 @@ else:
     if args.delete:
         deleteFile()
     if args.version:
-        print(f"\npwm.py version: {sysVer}")
+        print(f"\npwm.py version: {codeVersion}")
     if args.icons:
         icons()
     if args.decrypt:
