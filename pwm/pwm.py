@@ -2,6 +2,7 @@
 #Can analyze a given password and output recommendations and weaknesses.
 #Utilizes the Have I Been Pwned API to check the password against databreaches.
 #Can store passwords in plaintext, SHA256, or AES-256.
+#Can generate passwords given some parameters
 
 #Output notation:
 #[>] Header
@@ -13,17 +14,20 @@
 #libraries
 import re
 from ip import insecurePhrases as phrases
+import random
+import string
 import hashlib
 import os
 import datetime
 import requests #must be downloaded
 import argparse
 import shutil
+import getpass
 from Crypto.Cipher import AES               #must be downloaded
 from Crypto.Random import get_random_bytes  #must be downloaded
 from Crypto.Util.Padding import pad, unpad  #must be downloaded
 
-sysVer = "1.1.0" #version
+sysVer = "1.2.0" #version
 
 #create command-line arguments to modify script behavior
 def argument_parse():
@@ -41,13 +45,14 @@ def argument_parse():
     parser.add_argument("-d", "--delete", help="Deletes the specified filename (must be inside vault directory, write in place of password)",action="store_true")
     parser.add_argument("-v", "--version", help="Output the script version", action="store_true")
     parser.add_argument("-i", "--icons", help="Print out the meaning of each line icon prefix.",action="store_true")
+    parser.add_argument("-g", "--generate", help="Generate a cryptographically secure password.",action="store_true")
 
     return parser.parse_args()
 
 #main function
 def main():
     args = argument_parse()
-    password = args.password
+    password = (rf"{args.password}").strip()
     phraseList = []
 
     checks = {
@@ -70,7 +75,7 @@ def main():
                 checks["lowercase"] = True
             if re.search(r"[0-9]",string):      #checks for numbers
                 checks["nums"] = True
-            if re.search(r"[!@#$%^&*()]",string):   #checks for at least one special character
+            if re.search(r"[`~!@#$%^&*()-_=+]",string):   #checks for at least one special character
                 checks["specials"] = True
         else:
             print("[*] Invalid password string input")
@@ -184,7 +189,7 @@ def encrypt():
     password = args.password
     
     filename = input("\n[i] Specify a file name for the encrypted password: ")
-    plaintextKey = input("[i] Specify the key (password) to encrypt/decrypt the password: ")
+    plaintextKey = getpass.getpass("[i] Specify the key (password) to encrypt/decrypt the password: ")
     key = deriveKey(plaintextKey)
 
     cipher = AES.new(key, AES.MODE_CBC, iv)
@@ -200,7 +205,7 @@ def encrypt():
 #decrypt specified file
 def decrypt():
     filename = input("\n[i] Specify the filename to decrypt: ")
-    plaintextKey = input("[i] Specify the encryption key (password): ")
+    plaintextKey = getpass.getpass("[i] Specify the encryption key (password): ")
     key = deriveKey(plaintextKey)
     with open(f"vault/{filename}.enc", "rb") as target:
         encryptedData = target.read()
@@ -270,32 +275,131 @@ def icons():
     print("[i] - Informational")
     print("[*] - Critical Error")
 
+#generate a password
+def generate():
+    # Initial settings for the password length and available character types
+    length = input("\n[i] Set the password length (integer, 8-32): ")
+    if not length.isdigit() or int(length) not in range(8, 33):
+        print("[!] Invalid length. Length must be an integer between 8 and 32.")
+        return
+    length = int(length)
+    
+    options = {
+        "uppers": False,
+        "lowers": False,
+        "nums": False,
+        "specials": False
+    }
+
+    # Ask user for input regarding character sets
+    uppersSetting = input("[i] Include uppercase letters? (Y/N) ")
+    if uppersSetting in ("Y", "N"):
+        if uppersSetting == "Y":
+            options["uppers"] = True
+    else:
+        print("[!] Invalid input for uppercase setting.")
+        return
+
+    lowersSetting = input("[i] Include lowercase letters? (Y/N) ")
+    if lowersSetting in ("Y", "N"):
+        if lowersSetting == "Y":
+            options["lowers"] = True
+    else:
+        print("[!] Invalid input for lowercase setting.")
+        return
+
+    numSetting = input("[i] Include numbers? (Y/N) ")
+    if numSetting in ("Y", "N"):
+        if numSetting == "Y":
+            options["nums"] = True
+    else:
+        print("[!] Invalid input for numbers setting.")
+        return
+
+    specialsSetting = input("[i] Include special characters? (Y/N) ")
+    if specialsSetting in ("Y", "N"):
+        if specialsSetting == "Y":
+            options["specials"] = True
+    else:
+        print("[!] Invalid input for special characters setting.")
+        return
+
+    # Define functions for random character generation
+    def getLower():
+        return random.choice(string.ascii_lowercase)
+
+    def getUpper():
+        return random.choice(string.ascii_uppercase)
+
+    def getNum():
+        return random.choice(string.digits)
+
+    def getSpecialChar():
+        specialChars = ("!","@","#","$","%","^","&","*","(",")")
+        return random.choice(specialChars)
+
+    # List of available character generators based on selected options
+    char_generators = []
+    if options["uppers"]:
+        char_generators.append(getUpper)
+    if options["lowers"]:
+        char_generators.append(getLower)
+    if options["nums"]:
+        char_generators.append(getNum)
+    if options["specials"]:
+        char_generators.append(getSpecialChar)
+
+    # Ensure at least one character from each selected type is added
+    output = ""
+    if options["uppers"]:
+        output += getUpper()
+    if options["lowers"]:
+        output += getLower()
+    if options["nums"]:
+        output += getNum()
+    if options["specials"]:
+        output += getSpecialChar()
+
+    # Fill the rest of the password length with random characters from selected types
+    while len(output) < length:
+        # Randomly choose one of the allowed character types
+        chosen_char_func = random.choice(char_generators)
+        output += chosen_char_func()
+
+    # Randomize the order of characters in the final password
+    output = ''.join(random.sample(output, len(output)))
+
+    print("\n[>] Password Generator Result: ")
+    print(f"[+] {output}")
+
 #parse arguments and run script
 args = argument_parse()
-if args.clearvault == False and args.delete == False and args.version == False and args.icons == False and args.decrypt == False and args.read == False and args.readvault == False:
+if args.clearvault == False and args.delete == False and args.version == False and args.icons == False and args.decrypt == False and args.read == False and args.readvault == False and args.generate == False:
     if args.password == None:
         print("\n[!] Error: No input provided.")
     else:
-        if args.noanalysis == True:
+        if args.noanalysis:
             main()
-        if args.plaintext == True:
+        if args.plaintext:
             savePlaintext()
-        if args.sha256 == True:
+        if args.sha256:
             saveHashed()
-        if args.encrypt == True:
+        if args.encrypt:
             encrypt()
 else:
-    if args.clearvault == True:
+    if args.clearvault:
         clearVault()
-    if args.delete == True:
+    if args.delete:
         deleteFile()
-    if args.version == True:
+    if args.version:
         print(f"\npwm.py version: {sysVer}")
-    if args.icons == True:
+    if args.icons:
         icons()
-    if args.decrypt == True:
+    if args.decrypt:
         decrypt()
-    if args.read == True:
+    if args.read:
         read()
-    if args.readvault == True:
+    if args.readvault:
         readVault()
+    if args.generate:
+        generate()
