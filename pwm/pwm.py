@@ -27,18 +27,18 @@ from Crypto.Cipher import AES               #must be downloaded
 from Crypto.Random import get_random_bytes  #must be downloaded
 from Crypto.Util.Padding import pad, unpad  #must be downloaded
 
-sysVer = "1.2.0" #version
+sysVer = "1.2.1" #version
 
 #create command-line arguments to modify script behavior
 def argument_parse():
     parser = argparse.ArgumentParser(description="PWM (PassWord Manager) in a python script capable of analyzing and storing user-supplied passwords as plaintext, hashed using SHA-256, or encrypted using AES-256.")
     parser.add_argument("password", nargs="?", help="Input the password for analysis/storage or the filename of a saved file to read/delete.")
     parser.add_argument("-n", "--noanalysis", help="Do not analyze the password. Useful for just storing the password without analyzing it.",action="store_false")
-    parser.add_argument("-p", "--plaintext", help="Store the password in plaintext",action="store_true")
-    parser.add_argument("-s", "--sha256", help="Store the password as a hash (SHA-256)",action="store_true")
+    parser.add_argument("-sP", "--plaintext", help="Store the password in plaintext",action="store_true")
+    parser.add_argument("-sH", "--sha256", help="Store the password as a hash (SHA-256)",action="store_true")
     parser.add_argument("-r", "--read", help="Read the contents of a password file. This will read the raw data from the file, use -u for encrypted files. Hashed passwords cannot be directly retrieved.", action="store_true")
     parser.add_argument("-o", "--readvault", help="List the contents of the vault.",action="store_true")
-    parser.add_argument("-e", "--encrypt", help="Stores password encrypted (AES-256)",action="store_true")
+    parser.add_argument("-sE", "--encrypt", help="Stores password encrypted (AES-256)",action="store_true")
     parser.add_argument("-u", "--decrypt", help="Decrypt an encrypted key. Must be in the pwm/vault/ directory.",action="store_true")
     parser.add_argument("-a", "--noapi", help="Disables the HaveIBeenPwned API check in case using offline. Script will still work if not used but you will see an error in the output.",action="store_true")
     parser.add_argument("-c", "--clearvault", help="Deletes the vault directory and all data inside of it.", action="store_true")
@@ -46,7 +46,6 @@ def argument_parse():
     parser.add_argument("-v", "--version", help="Output the script version", action="store_true")
     parser.add_argument("-i", "--icons", help="Print out the meaning of each line icon prefix.",action="store_true")
     parser.add_argument("-g", "--generate", help="Generate a cryptographically secure password.",action="store_true")
-
     return parser.parse_args()
 
 #main function
