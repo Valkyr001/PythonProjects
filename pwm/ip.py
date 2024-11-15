@@ -1,4 +1,5 @@
 #current wordcount: 1666
+#list of easily guessable phrases that should be included in a password.
 insecurePhrases = [
     "password", "123456", "123456789", "12345678", "12345", "1234", "abc", "abc123",
     "qwerty", "letmein", "monkey", "sunshine", "iloveyou", "trustno1", "password1",

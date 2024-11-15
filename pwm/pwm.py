@@ -1,8 +1,7 @@
 #Password management multi-tool.
 #Can analyze a given password and output recommendations and weaknesses.
 #Utilizes the Have I Been Pwned API to check the password against databreaches.
-
-#This version of pwm handles user-interaction through the command prompt/terminal.
+#Can store passwords in plaintext, SHA256, or AES-256.
 
 #Output notation:
 #[>] Header
@@ -17,20 +16,25 @@ from ip import insecurePhrases as phrases
 import hashlib
 import os
 import datetime
-import requests
+import requests #must be downloaded
 import argparse
 import shutil
+from Crypto.Cipher import AES               #must be downloaded
+from Crypto.Random import get_random_bytes  #must be downloaded
+from Crypto.Util.Padding import pad, unpad  #must be downloaded
 
-sysVer = "1.0.0" #version
+sysVer = "1.1.0" #version
 
+#create command-line arguments to modify script behavior
 def argument_parse():
-    parser = argparse.ArgumentParser(description="PWM (PassWord Manager) in a python script capable of analyzing and storing user-supplied passwords.")
+    parser = argparse.ArgumentParser(description="PWM (PassWord Manager) in a python script capable of analyzing and storing user-supplied passwords as plaintext, hashed using SHA-256, or encrypted using AES-256.")
     parser.add_argument("password", nargs="?", help="Input the password for analysis/storage or the filename of a saved file to read/delete.")
     parser.add_argument("-n", "--noanalysis", help="Do not analyze the password. Useful for just storing the password without analyzing it.",action="store_false")
     parser.add_argument("-p", "--plaintext", help="Store the password in plaintext",action="store_true")
-    parser.add_argument("-s", "--sha256", help="Store the password as a hash (SHA256)",action="store_true")
-    #parser.add_argument("-e", "--encrypt", help="Stores password encrypted",action="store_true")
-    #parser.add_argument("-r", "--read", help="Read a stored password.",action="store_true")
+    parser.add_argument("-s", "--sha256", help="Store the password as a hash (SHA-256)",action="store_true")
+    parser.add_argument("-r", "--read", help="Read the contents of a password file. This will read the raw data from the file, use -u for encrypted files. Hashed passwords cannot be directly retrieved.", action="store_true")
+    parser.add_argument("-e", "--encrypt", help="Stores password encrypted (AES-256)",action="store_true")
+    parser.add_argument("-u", "--decrypt", help="Decrypt an encrypted key. Must be in the pwm/vault/ directory.",action="store_true")
     parser.add_argument("-a", "--noapi", help="Disables the HaveIBeenPwned API check in case using offline. Script will still work if not used but you will see an error in the output.",action="store_true")
     parser.add_argument("-c", "--clearvault", help="Deletes the vault directory and all data inside of it.", action="store_true")
     parser.add_argument("-d", "--delete", help="Deletes the specified filename (must be inside vault directory, write in place of password)",action="store_true")
@@ -41,7 +45,6 @@ def argument_parse():
 
 #main function
 def main():
-    #main function variables
     args = argument_parse()
     password = args.password
     phraseList = []
@@ -58,15 +61,15 @@ def main():
     #check password against simple characteristics with RegEx
     def simpleChecks(string):
         if string != "":
-            if re.match(r"^.{10,}$",string):
+            if re.match(r"^.{10,}$",string):    #checks for minimum length
                 checks["length"] = True
-            if re.search(r"[A-Z]",string):
+            if re.search(r"[A-Z]",string):      #checks for uppercase letters
                 checks["uppercase"] = True
-            if re.search(r"[a-z]",string):
+            if re.search(r"[a-z]",string):      #checks for lowercase letters
                 checks["lowercase"] = True
-            if re.search(r"[0-9]",string):
+            if re.search(r"[0-9]",string):      #checks for numbers
                 checks["nums"] = True
-            if re.search(r"[!@#$%^&*()]",string):
+            if re.search(r"[!@#$%^&*()]",string):   #checks for at least one special character
                 checks["specials"] = True
         else:
             print("[*] Invalid password string input")
@@ -128,7 +131,7 @@ def main():
         checkPhrases(password)
         apiCheck(password)
 
-#handles storage of password in plaintext (-p option)
+#handles storage of password in plaintext
 def savePlaintext():
     args = argument_parse()
     string = args.password
@@ -147,6 +150,7 @@ def savePlaintext():
     else:
         print("[!] No input detected. Cannot store password.")
 
+#handles storage of password in SHA-256
 def saveHashed():
     args = argument_parse()
     string = args.password
@@ -166,6 +170,62 @@ def saveHashed():
     else:
         print("[!] No input detected. Cannot store password.")
 
+#convert encryption passphrase into SHA-256 to pass to AES as encryption key
+def deriveKey(passphrase):
+    sha256 = hashlib.sha256(passphrase.encode()).digest()
+    return sha256
+
+#encrypt the specified file
+def encrypt():
+    args = argument_parse()
+    path = "vault"
+    iv = get_random_bytes(AES.block_size)
+    password = args.password
+    
+    filename = input("\n[i] Specify a file name for the encrypted password: ")
+    plaintextKey = input("[i] Specify the key (password) to encrypt/decrypt the password: ")
+    key = deriveKey(plaintextKey)
+
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    padded_data = pad(password.encode(), AES.block_size)
+    ciphertext = cipher.encrypt(padded_data)
+
+    os.makedirs(path, exist_ok=True)
+    f = open(f"{path}/{filename}.enc","wb")
+    f.write(iv + ciphertext)
+    f.close()
+    print(f"[+] Password stored at pwm/{path}/{filename}.enc as ciphertext (AES256).")
+
+#decrypt specified file
+def decrypt():
+    filename = input("\n[i] Specify the filename to decrypt: ")
+    plaintextKey = input("[i] Specify the encryption key (password): ")
+    key = deriveKey(plaintextKey)
+    with open(f"vault/{filename}.enc", "rb") as target:
+        encryptedData = target.read()
+
+    iv = encryptedData[:AES.block_size]
+    ciphertext = encryptedData[AES.block_size:]
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    try:
+        decryptedData = unpad(cipher.decrypt(ciphertext), AES.block_size)
+        print(f"[i] Decrypted Key: {decryptedData.decode("utf-8")}")
+    except ValueError:
+        print("[!] Decryption Failed: Invalid key or corrupted data.")
+
+#read specified file, should be used only will plaintext or hashed files
+def read():
+    filename = input("\n[i] Specify the password filename to read: ")
+
+    with open(f"vault/{filename}.txt", "r") as file:
+        contents = file.readlines()
+        password = contents[1].strip()
+        try:
+            print(f"[+] {password}")
+        except FileNotFoundError:
+            print("[!] Specified file name not found.")
+
+#delete the vault directory and all of its contents
 def clearVault():
     try:
         shutil.rmtree("vault")
@@ -173,6 +233,7 @@ def clearVault():
     except Exception:
         print(f"\n[*] Error: {Exception}")
 
+#delete a specific password file
 def deleteFile():
     args = argument_parse()
     try:
@@ -185,15 +246,17 @@ def deleteFile():
     except OSError as e:
         print(f"\n[*] Error: {e.strerror}")
 
+#print the definitions for each of the line prefixes
 def icons():
     print("\n[>] - Header")
     print("[+] - Success/Check Passed")
     print("[!] - Alert/Check Failed")
     print("[i] - Informational")
     print("[*] - Critical Error")
-        
+
+#parse arguments and run script
 args = argument_parse()
-if args.clearvault == False and args.delete == False and args.version == False and args.icons == False:
+if args.clearvault == False and args.delete == False and args.version == False and args.icons == False and args.decrypt == False and args.read == False:
     if args.password == None:
         print("\n[!] Error: No input provided.")
     else:
@@ -203,6 +266,8 @@ if args.clearvault == False and args.delete == False and args.version == False a
             savePlaintext()
         if args.sha256 == True:
             saveHashed()
+        if args.encrypt == True:
+            encrypt()
 else:
     if args.clearvault == True:
         clearVault()
@@ -212,3 +277,7 @@ else:
         print(f"\npwm.py version: {sysVer}")
     if args.icons == True:
         icons()
+    if args.decrypt == True:
+        decrypt()
+    if args.read == True:
+        read()
