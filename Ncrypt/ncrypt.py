@@ -17,6 +17,10 @@ def deriveKey(string):
     sha256 = hashlib.sha256(string.encode()).digest()
     return sha256
 
+def removeExt(path):
+    root, ext = os.path.splitext(path)
+    return root
+
 def encrypt():
     args = parse()
     path = args.file
@@ -40,12 +44,11 @@ def encrypt():
         with open(path, "wb") as encrypted:
             encrypted.write(iv + encryptedData)
 
-        cutExt = path[:-4]
+        cutExt = removeExt(path)
         newPath = cutExt + ".aes"
         os.rename(path, newPath)
 
         print(f"\n[+] File encrypted and saved as {newPath}")
-
     else:
         return
 
@@ -60,20 +63,21 @@ def decrypt():
     
     cipher = AES.new(key, AES.MODE_CBC, iv)
 
+    ext = input("[i] Specify the file extension to output the decrypted file as (.txt, .webp, .png): ")
+
     try:
         decryptedData = unpad(cipher.decrypt(encryptedData), AES.block_size)
 
         with open(path, "wb") as decrypted:
             decrypted.write(decryptedData)
 
-        cutExt = path[:-4]
-        decryptedPath = cutExt + ".txt"
+        cutExt = removeExt(path)
+        decryptedPath = cutExt + ext
         os.rename(path, decryptedPath)
 
         print(f"\n[+] File decrypted: {decryptedPath}")
     except ValueError as e:
         print("[!] Failed to decrypt file. Invalid key or corrupted data.")
-        print(f"[!] Error Info: {str(e)}")
 
 args = parse()
 if args.mode == "encrypt":
