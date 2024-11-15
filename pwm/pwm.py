@@ -33,6 +33,7 @@ def argument_parse():
     parser.add_argument("-p", "--plaintext", help="Store the password in plaintext",action="store_true")
     parser.add_argument("-s", "--sha256", help="Store the password as a hash (SHA-256)",action="store_true")
     parser.add_argument("-r", "--read", help="Read the contents of a password file. This will read the raw data from the file, use -u for encrypted files. Hashed passwords cannot be directly retrieved.", action="store_true")
+    parser.add_argument("-o", "--readvault", help="List the contents of the vault.",action="store_true")
     parser.add_argument("-e", "--encrypt", help="Stores password encrypted (AES-256)",action="store_true")
     parser.add_argument("-u", "--decrypt", help="Decrypt an encrypted key. Must be in the pwm/vault/ directory.",action="store_true")
     parser.add_argument("-a", "--noapi", help="Disables the HaveIBeenPwned API check in case using offline. Script will still work if not used but you will see an error in the output.",action="store_true")
@@ -216,14 +217,29 @@ def decrypt():
 #read specified file, should be used only will plaintext or hashed files
 def read():
     filename = input("\n[i] Specify the password filename to read: ")
-
-    with open(f"vault/{filename}.txt", "r") as file:
-        contents = file.readlines()
-        password = contents[1].strip()
-        try:
+    try:
+        with open(f"vault/{filename}.txt", "r") as file:
+            contents = file.readlines()
+            password = contents[1].strip()
             print(f"[+] {password}")
-        except FileNotFoundError:
-            print("[!] Specified file name not found.")
+    except FileNotFoundError:
+        print("[!] Invalid file name or file type.")
+
+def readVault():
+    directory = "/vault"
+    try:
+        files = os.listdir("vault")
+        print("\n[>] Vault Contents:\n")
+        for file in files:
+            file_path = os.path.join("vault",file)
+            if os.path.isfile(file_path):
+                print(f"[+] {file}")
+    except FileNotFoundError:
+        print(f"\n[!] The directory '{directory}' does not exist.")
+    except PermissionError:
+        print(f"\n[!] Permission denied to access the directory {directory}")
+    except Exception as e:
+        print(f"\n[*] Error accessing {directory}: {e}")
 
 #delete the vault directory and all of its contents
 def clearVault():
@@ -256,7 +272,7 @@ def icons():
 
 #parse arguments and run script
 args = argument_parse()
-if args.clearvault == False and args.delete == False and args.version == False and args.icons == False and args.decrypt == False and args.read == False:
+if args.clearvault == False and args.delete == False and args.version == False and args.icons == False and args.decrypt == False and args.read == False and args.readvault == False:
     if args.password == None:
         print("\n[!] Error: No input provided.")
     else:
@@ -281,3 +297,5 @@ else:
         decrypt()
     if args.read == True:
         read()
+    if args.readvault == True:
+        readVault()
