@@ -1,3 +1,14 @@
+#Python script for encrypting specified files.
+#Optional encrypted vault for storing passwords included.
+
+#Header Key:
+#[+] = Successful Operation
+#[!] = Unsuccessful Operation
+#[*] = Information
+#[>] = User input
+#[!!!] - Critical/Unknown Error (Exception Provided)
+
+#libraries
 import hashlib
 import os
 import argparse
@@ -8,249 +19,111 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
+#parser
 def parse():
-    parser = argparse.ArgumentParser(description="Specify a file for encryption or decryption using a specific or master key")
-
-    parser.add_argument("-e", "--encrypt", help="Encrypt the target file. -k and -f arguments are required.", action="store_true")
-    parser.add_argument("-d", "--decrypt", help="Decrypt the target file. -k and -f arguments required.", action="store_true")
-    parser.add_argument("-s", "--hashfile", help="Generate a SHA256 hash of the specified file.", action="store_true")
-    parser.add_argument("-k", "--key", type=str, help="Specify the key or password used for encryption or decryption.")
-    parser.add_argument("-f", "--file", type=str, help="Specify the full path of the target file.")
-    parser.add_argument("-sV", "--savevault", help="Store the passkey used in the current operation to the vault file. Must be used with -e", action="store_true")
-    parser.add_argument("-mV", "--makevault", help="Create a vault file.", action="store_true")
-    parser.add_argument("-rV", "--readvault", help="Decrypt and read the contents of the vault file. Master key required.", action="store_true")
-    parser.add_argument("-cV", "--clearvault", help="Delete the vault file and permanantly wipe its contents.", action="store_true")
-
+    parser = argparse.ArgumentParser(description="Python script for encrypting and decrypting file with AES-256.")
+    parser.add_argument("-e", "--encrypt", help="Encrypt the specified target file. -f and -k options required.", action="store_true")
+    parser.add_argument("-d", "--decrypt", help="Decrypt the specified target file. -f and -k options required.", action="store_true")
+    parser.add_argument("-s", "--hashfile", help="Generate SHA-256 hash of the specified file. -f option required.", action="store_true")
+    parser.add_argument("-k", "--key", type=str, help="Specify the key/password to use for the current operation.")
+    parser.add_argument("-f", "--file", type=str, help="Specify the target file. Use full path.")
+    parser.add_argument("-sV", "--savevault", help="Store the passkey used in the current operation in the vault file. -k must be included.", action="store_true")
+    parser.add_argument("-mV", "--makevault", help="Create a new vault file.", action="store_true")
+    parser.add_argument("-rV", "--readvault", help="Decrypts and prints the contents of the vault file.", action="store_true")
+    parser.add_argument("-cV", "--clearvault", help="Delete the vault file.", action="store_true")
     return parser.parse_args()
 
-def deriveKey(string):
-    sha256 = hashlib.sha256(string.encode()).digest()
-    return sha256
+#convert plaintext password to sha256 hash
+def derive(string):
+    try:
+        sha256 = hashlib.sha256(string.encode()).digest()
+        return sha256
+    except Exception as e:
+        print("[!] Error occured while generating SHA-256 hash of plaintext key.")
 
-def removeExt(path):
+#cut extensions
+def cutExt(path):
     root, ext = os.path.splitext(path)
     return root
 
+#encrypt file
 def encrypt():
     args = parse()
     path = args.file
-    key = deriveKey(args.key)
+    key = derive(args.key)
     iv = get_random_bytes(AES.block_size)
 
-    print("\n[!] WARNING: This operation will completely overwrite the original file's contents.")
-    print("[!] Please ensure that the encryption key is stored safely to avoid data loss.")
-    print("[!] File will be converted to .aes")
-    confirm = input("\n[!] Do you wish to proceed? (Y/N) ")
+    print("\n[*] Warning: This operation will completely overwrite the contents of the target file with the encrypted version.")
+    print("[*] To avoid permanant data loss ensure that the encryption key is stored securely. Consider using -sV")
+    print("[*] The target file will be converted to .aes format.")
+    confirm = input("\n[>] Do you wish to proceed? (y/n)")
 
-    if confirm == "Y":
+    if confirm.lower() in ["y","n"]:
+        if confirm.lower() == "y":
+            try:
+                with open(path, "rb") as pf1:
+                    plaintxt = pf1.read()
+            except FileNotFoundError:
+                print("[!] Unable to read target file: File Not Found.")
+            except PermissionError:
+                print("[!] Unable to read the target file, you do not have permission to read the file.")
+            except Exception as e0:
+                print(f"[!!!] Unknown error occured while attempting to read target file: {e0}")
+            try:
+                cipher = AES.new(key, AES.MODE_CBC, iv)
+                padded = pad(plaintxt, AES.block_size)
+                ciphertxt = cipher.encrypt(padded)
+            except ValueError:
+                print("[!] An error occured while encrypting the binary data.")
+            except Exception as e1:
+                print(f"[!!!] Unknown error occured while attempting to encrypt binary data: {e1}")
+            try:
+                with open(path, "wb") as ef1:
+                    ef1.write(iv + ciphertxt)
+            except ValueError:
+                print("[!] Error occured while encrypting the file contents.")
+            except Exception as e2:
+                print(f"[!!!] An unknown error occured while writing to the target file: {e2}")
+            try:
+                cutExt = cutExt(path)
+                newPath = cutExt + ".aes"
+                os.rename(path, newPath)
+            except PermissionError:
+                print("[!] An error occured while attempting to reformat the target file to AES. You do not have permission to perform this action.")
+            except FileNotFoundError:
+                print("[!] An error occured while attempting to reformat the target file. File Not Found.")
+            print(f"[+] File encrypted as saved as {newPath}")
 
-        with open(path, "rb") as original:
-            data = original.read()
-        
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        paddedData = pad(data, AES.block_size)
-        encryptedData = cipher.encrypt(paddedData)
-
-        with open(path, "wb") as encrypted:
-            encrypted.write(iv + encryptedData)
-
-        cutExt = removeExt(path)
-        newPath = cutExt + ".aes"
-        os.rename(path, newPath)
-
-        print(f"\n[+] File encrypted and saved as {newPath}")
+        elif confirm.lower() == "n":
+            print("[*] Closing Program...")
+            return
     else:
+        print("[!] Unexpected or invalid input provided.")
         return
 
+#decrypt file   
 def decrypt():
     args = parse()
     path = args.file
-    key = deriveKey(args.key)
-
-    with open(path, "rb") as encrypted:
-        iv = encrypted.read(AES.block_size)
-        encryptedData = encrypted.read()
-    
+    key = derive(args.key)
+    try:
+        with open(path, "rb") as ef1:
+            encryptedData = ef1.read()
+    except FileNotFoundError as fnf0:
+        print("[!] Unable to locate target file.")
+    except PermissionError as permErr0:
+        print("[!] You do not have permission to read the target file.")
+    except Exception as e0:
+        print(f"[!!!] Unknown error occured while attempting to read target file: {e0}")
+    iv = encryptedData[:AES.block_size]
+    ciphertext = encryptedData[AES.block_size:]
     cipher = AES.new(key, AES.MODE_CBC, iv)
-    ext = input("\n[i] Specify the file extension to output the decrypted file as: ")
+    ext = input("[>] Specify the file extension to convert the target file to: ")
     if re.match(r"(\.[a-zA-Z]{3,4})", ext):
         try:
-            decryptedData = unpad(cipher.decrypt(encryptedData), AES.block_size)
-
-            with open(path, "wb") as decrypted:
-                decrypted.write(decryptedData)
-
-            cutExt = removeExt(path)
-            decryptedPath = cutExt + ext
-            os.rename(path, decryptedPath)
-
-            print(f"\n[+] File decrypted: {decryptedPath}")
-        except ValueError as e:
-            print("[!] Failed to decrypt file. Invalid key or corrupted data.")
-    else:
-        print("[!] Invalid file extension entered.")
-
-def hash():
-    args = parse()
-    file = args.file
-    try:
-        with open(file, "r") as f:
-            data = f.read()
-            sha256 = hashlib.sha256(data.encode()).hexdigest()
-            print(f"\n[+] SHA256: {sha256}")
-    except FileNotFoundError:
-        print("\n[!] Error specified file is invalid or does not exist.")
-
-def makeVault():
-    vaultFile = "vault.aes"
-    if os.path.exists(vaultFile):
-        print("\n[!] Cannot create a vault file when one already exists.")
-        return
-    else:
-        masterKey1 = getpass.getpass("\n[i] Create a master key to encrypt/decrypt the vault file: ")
-        masterKey2 = getpass.getpass("[i] Re-enter your new master key: ")
-        if masterKey1 == masterKey2:
-            iv = get_random_bytes(AES.block_size)
-            key = deriveKey(masterKey1)
-            timestamp = datetime.datetime.now()
-            with open(vaultFile, "w") as vaultInit:
-                vaultInit.write(f"--Vault Created: {timestamp}--")
-            with open(vaultFile, "rb") as vaultRead:
-                data = vaultRead.read()
-
-            cipher = AES.new(key, AES.MODE_CBC, iv)
-            padded = pad(data, AES.block_size)
-            encrypted = cipher.encrypt(padded)
-            try:
-                with open(vaultFile, "wb") as vaultWrite:
-                    vaultWrite.write(iv + encrypted)
-                print(f"[+] Vault created successfully. Location: Ncrypt/{vaultFile}")
-            except ValueError:
-                print("[!] Error occured while creating the vault file.")
-                print(f"[!] Error Details: {ValueError}")
-
-        else:
-            print("[!] Master keys do not match. Exiting.")
-            return
-        
-def readVault():
-    vaultFile = "vault.aes"
-    if os.path.exists(vaultFile):
-        masterKey = getpass.getpass("[i] Enter your master key: ")
-        key = deriveKey(masterKey)
-        with open(vaultFile, "rb") as readVault:
-            getData = readVault.read()
-
-        iv = getData[:AES.block_size]
-        ciphertext = getData[AES.block_size:]
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        try:
-            plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
-            print("[+] Decrypted Contents:")
-            print(plaintext.decode("utf-8"))
+            plaintext = unpad(cipher.decrypt)
         except ValueError:
-            print(f"\n[!] Error while decrypting the vault file: {ValueError}")
-    else:
-        print("\n[!] No vault file exists. You can create one with ncrypt.py -mV")
-
-def clearVault():
-    vaultFile = "vault.aes"
-    if os.path.exists(vaultFile):
-        try:
-            with open(vaultFile, "w") as w:
-                pass
-            os.remove(vaultFile)
-            print("[+] Vault successfully deleted.")
-        except PermissionError:
-            print("[!] You do not have permission to delete this vault file.")
+            print("[!] Unable to decrypt target file. Invalid key or corrupted data.")
         except Exception as e:
-            print(f"[!] Error occured while deleting vault file: {e}")
-    else:
-        print("[!] No vault file exists, unless it was moved out of the Ncrypt directory.")
+            print(f"[!!!] Unknown error occured while decrypting target file: {e}")
 
-def writeVault():
-    args = parse()
-    path = args.file
-    passwd = args.key
-    vaultFile = "vault.aes"
-
-    def decryptVault(key):
-        with open(vaultFile, "rb") as readVault:
-            ciphertxtData = readVault.read()
-        iv = ciphertxtData[:AES.block_size]
-        ciphertext = ciphertxtData[AES.block_size:]
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        try:
-            plaintxtData = unpad(cipher.decrypt(ciphertext), AES.block_size)
-            return plaintxtData.decode("utf-8")
-        except ValueError:
-            print("[!] Error decrypting the vault file. Likely incorrect master key.")
-
-    def writeData(original, appended):
-        try:
-            with open(vaultFile, "w") as writeVault:
-                writeVault.write(original)
-                writeVault.write(f"\n{appended}")
-        except Exception as e:
-            print(f"[!] Error occured while writing plaintext data to the vault file: {e}")
-
-    def encryptVault(key):
-        iv = get_random_bytes(AES.block_size)
-        with open(vaultFile, "rb") as readVault:
-            plainData = readVault.read()
-            cipher = AES.new(key, AES.MODE_CBC, iv)
-            padded = pad(plainData, AES.block_size)
-            ciphertext = cipher.encrypt(padded)
-        with open(vaultFile, "wb") as writeVault:
-            writeVault.write(iv + ciphertext)
-            print("[+] Path and key saved successfully.")
-
-    if os.path.exists(vaultFile):
-        key = deriveKey(getpass.getpass("[>] Enter your master key: "))
-        plaintxt = decryptVault(key)
-        newData = (f"{path}:{passwd}")
-        writeData(plaintxt,newData)
-        encryptVault(key)
-    else:
-        print("[!] No vault file exists. Cannot save path/key pair.")
-
-args = parse()
-if not args.hashfile and not args.encrypt and not args.decrypt and not args.makevault and not args.readvault and not args.clearvault:
-    print("\n[!] No valid operation specified. Must specify whether encrypting, decrypting, hashing, or creating a vault.")
-elif args.hashfile or args.encrypt or args.decrypt or args.makevault or args.readvault or args.clearvault:
-    trueCount = 0
-    for i in (args.hashfile, args.encrypt, args.decrypt, args.makevault, args.readvault, args.clearvault):
-        if i == True:
-            trueCount += 1
-    if trueCount > 1:
-        print("\n[!] Cannot specify more than one operation. (Encrypt, Decrypt, Hash, Make Vault)")
-    else:
-        if args.encrypt:
-            if not args.key == None:
-                if not args.file == None:
-                    encrypt()
-                    if args.savevault:
-                        writeVault()
-                else:
-                    print("\n[!] No valid target file specified.")
-            else:
-                print("\n[!] No key for encryption specified.")
-        elif args.decrypt:
-            if not args.key == None:
-                if not args.file == None:
-                    decrypt()
-                else:
-                    print("\n[!] No valid target file specified.")
-            else:
-                print("\n[!] No key for decryption specified.")
-        elif args.hashfile:
-            if not args.file == None:
-                hash()
-            else:
-                print("\n[!] No target file specified for hash operation.")
-        elif args.makevault:
-            makeVault()
-        elif args.readvault:
-            readVault()
-        elif args.clearvault:
-            clearVault()
