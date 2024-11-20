@@ -40,7 +40,7 @@ def encrypt():
     print("\n[!] WARNING: This operation will completely overwrite the original file's contents.")
     print("[!] Please ensure that the encryption key is stored safely to avoid data loss.")
     print("[!] File will be converted to .aes")
-    confirm = input("\n[!] Do you wish to proceed? (Y/N) ")
+    confirm = input("\n[!] Do you wish to proceed? (Y/N): ")
 
     if confirm == "Y":
 
