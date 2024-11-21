@@ -337,39 +337,47 @@ def generate():
         specialChars = ("!","@","#","$","%","^","&","*","(",")")
         return random.choice(specialChars)
 
-    # List of available character generators based on selected options
-    char_generators = []
-    if options["uppers"]:
-        char_generators.append(getUpper)
-    if options["lowers"]:
-        char_generators.append(getLower)
-    if options["nums"]:
-        char_generators.append(getNum)
-    if options["specials"]:
-        char_generators.append(getSpecialChar)
+    def generate():
+        # List of available character generators based on selected options
+        char_generators = []
+        if options["uppers"]:
+            char_generators.append(getUpper)
+        if options["lowers"]:
+            char_generators.append(getLower)
+        if options["nums"]:
+            char_generators.append(getNum)
+        if options["specials"]:
+            char_generators.append(getSpecialChar)
 
-    # Ensure at least one character from each selected type is added
-    output = ""
-    if options["uppers"]:
-        output += getUpper()
-    if options["lowers"]:
-        output += getLower()
-    if options["nums"]:
-        output += getNum()
-    if options["specials"]:
-        output += getSpecialChar()
+        # Ensure at least one character from each selected type is added
+        output = ""
+        if options["uppers"]:
+            output += getUpper()
+        if options["lowers"]:
+            output += getLower()
+        if options["nums"]:
+            output += getNum()
+        if options["specials"]:
+            output += getSpecialChar()
 
-    # Fill the rest of the password length with random characters from selected types
-    while len(output) < length:
-        # Randomly choose one of the allowed character types
-        chosen_char_func = random.choice(char_generators)
-        output += chosen_char_func()
+        # Fill the rest of the password length with random characters from selected types
+        while len(output) < length:
+            # Randomly choose one of the allowed character types
+            chosen_char_func = random.choice(char_generators)
+            output += chosen_char_func()
 
-    # Randomize the order of characters in the final password
-    output = ''.join(random.sample(output, len(output)))
+        # Randomize the order of characters in the final password
+        output = ''.join(random.sample(output, len(output)))
+        return output
 
-    print("\n[>] Password Generator Result: ")
-    print(f"[+] {output}")
+    while True:
+        print("\n[>] Password Generator Result: ")
+        print(f"[+] {generate()}")
+        opt = input("\n[>] (1) End script or (2) regenerate? ")
+        if opt == "1":
+            break
+        elif opt == "2":
+            pass
 
 #parse arguments and run script
 args = argument_parse()

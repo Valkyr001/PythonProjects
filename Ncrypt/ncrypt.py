@@ -313,6 +313,3 @@ else:
             clearVault()
         elif args.readvault:
             readVault()
-    
-
-
