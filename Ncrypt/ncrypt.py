@@ -1,4 +1,4 @@
-#Python script for encrypting specified files.
+#Python script for encrypting system files.
 #Includes option to create an encrypted vault file to store passwords.
 
 #Header Key:
@@ -266,50 +266,43 @@ allopts = (
     args.readvault,
     args.clearvault
 )
-count = 0
+counter = 0
 for i in allopts:
     if i:
-        count += 1
-if count == 0:
-    print("[!] No arguments specified.")
+        counter += 1
+if counter == 0:
+    print("\n[!] No arguments specified.")
 else:
-    count = 0
-    for i in allopts[:2]:
+    counter = 0
+    for i in allopts[:3]:
         if i:
-            count += 1
-    if count > 1:
-        print("[!] Cannot specify more than one of: (Encrypt, Decrypt, Hash)")
-        quit()
-    if args.encrypt:
-        if not args.file == None:
-            if args.writevault:
-                encrypt(True)
-            if not args.writevault:
-                encrypt(False)
-        else:
-            print("[!] No target file specified.")
-    elif args.decrypt:
-        if not args.file == None:
-            decrypt()
-        else:
-            print("[!] No target file specified.")
-    elif args.hash:
-        if not args.file == None:
-            hash()
-        else:
-            print("[!] No target file specified.")
-    if not (args.encrypt or args.decrypt or args.hash) and args.file:
-        print("\n[!] No operation specified (Encrypt, Decrypt, Hash).")
-    count = 0
-    for i in (args.makevault, args.clearvault, args.readvault):
-        if i:
-            count += 1
-    if i > 1:
-        print("[!] Cannot specify more than one of: (-mV, -cV, -rV) in one operation.")
+            counter += 1
+    if counter > 1:
+        print("\n[!] Cannot specify more than one main operation. (Encrypt, Decrypt, or Hash.)")
     else:
-        if args.makevault:
-            makeVault()
-        elif args.clearvault:
-            clearVault()
-        elif args.readvault:
-            readVault()
+        if True in (args.encrypt, args.decrypt, args.hash):
+            if not args.file == None:
+                if args.encrypt:
+                    if args.writevault:
+                        encrypt(True)
+                    else:
+                        encrypt(False)
+                elif args.decrypt:
+                    decrypt()
+                elif args.hash:
+                    hash()
+            else:
+                print("\n[!] No target file specified.")
+        counter = 0
+        for l in allopts[3:]:
+            if l:
+                counter += 1
+        if counter > 1:
+            print("\n[!] Cannot specify more than one of: Make Vault, Clear Vault, Read Vault in a single operation.")
+        else:
+            if args.makevault:
+                makeVault()
+            elif args.readvault:
+                readVault()
+            elif args.clearvault:
+                clearVault()
