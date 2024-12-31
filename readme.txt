@@ -1,1 +1,1 @@
-Where I store most of my Python Projects. Archived means I am not touching it anymore.
+Repository for my Python projects.
