@@ -1,1 +1,0 @@
-icmpScan is an interactive python script used to test remote host reachability using ICMP Echo (ping) requests.
